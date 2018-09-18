@@ -103,6 +103,11 @@ func (drv SQLiteDriver) DumpSchema(u *url.URL, db *sql.DB) ([]byte, error) {
 	return trimLeadingSQLComments(schema)
 }
 
+// DumpData is not implemented
+func (drv SQLiteDriver) DumpData(u *url.URL, db *sql.DB) ([]byte, error) {
+	return nil, nil
+}
+
 // DatabaseExists determines whether the database exists
 func (drv SQLiteDriver) DatabaseExists(u *url.URL) (bool, error) {
 	_, err := os.Stat(sqlitePath(u))

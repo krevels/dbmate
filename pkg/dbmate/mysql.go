@@ -157,6 +157,11 @@ func (drv MySQLDriver) DumpSchema(u *url.URL, db *sql.DB) ([]byte, error) {
 	return trimLeadingSQLComments(schema)
 }
 
+// DumpData is not implemented
+func (drv MySQLDriver) DumpData(u *url.URL, db *sql.DB) ([]byte, error) {
+	return nil, nil
+}
+
 // DatabaseExists determines whether the database exists
 func (drv MySQLDriver) DatabaseExists(u *url.URL) (bool, error) {
 	name := databaseName(u)

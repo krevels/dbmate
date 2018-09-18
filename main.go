@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/amacneil/dbmate/pkg/dbmate"
 	"github.com/joho/godotenv"
+	"github.com/krevels/dbmate/pkg/dbmate"
 	"github.com/urfave/cli"
 )
 
@@ -45,9 +45,18 @@ func NewApp() *cli.App {
 			Value: dbmate.DefaultSchemaFile,
 			Usage: "specify the schema file location",
 		},
+		cli.StringFlag{
+			Name:  "data-file, a",
+			Value: dbmate.DefaultDataFile,
+			Usage: "specify the data file location",
+		},
 		cli.BoolFlag{
 			Name:  "no-dump-schema",
 			Usage: "don't update the schema file on migrate/rollback",
+		},
+		cli.BoolFlag{
+			Name:  "no-dump-data",
+			Usage: "don't dump the current db data on migrate/rollback",
 		},
 	}
 
@@ -105,6 +114,13 @@ func NewApp() *cli.App {
 			}),
 		},
 		{
+			Name:  "dump-data",
+			Usage: "Write the database schema to disk",
+			Action: action(func(db *dbmate.DB, c *cli.Context) error {
+				return db.DumpData()
+			}),
+		},
+		{
 			Name:  "wait",
 			Usage: "Wait for the database to become available",
 			Action: action(func(db *dbmate.DB, c *cli.Context) error {
@@ -136,8 +152,10 @@ func action(f func(*dbmate.DB, *cli.Context) error) cli.ActionFunc {
 		}
 		db := dbmate.New(u)
 		db.AutoDumpSchema = !c.GlobalBool("no-dump-schema")
+		db.AutoDumpData = !c.GlobalBool("no-dump-data")
 		db.MigrationsDir = c.GlobalString("migrations-dir")
 		db.SchemaFile = c.GlobalString("schema-file")
+		db.DataFile = c.GlobalString("data-file")
 
 		return f(db, c)
 	}

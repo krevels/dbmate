@@ -18,6 +18,9 @@ const DefaultMigrationsDir = "./db/migrations"
 // DefaultSchemaFile specifies default location for schema.sql
 const DefaultSchemaFile = "./db/schema.sql"
 
+// DefaultDataFile specifies default location for data.sql
+const DefaultDataFile = "./db/data.sql"
+
 // DefaultWaitInterval specifies length of time between connection attempts
 const DefaultWaitInterval = time.Second
 
@@ -27,9 +30,11 @@ const DefaultWaitTimeout = 60 * time.Second
 // DB allows dbmate actions to be performed on a specified database
 type DB struct {
 	AutoDumpSchema bool
+	AutoDumpData   bool
 	DatabaseURL    *url.URL
 	MigrationsDir  string
 	SchemaFile     string
+	DataFile       string
 	WaitInterval   time.Duration
 	WaitTimeout    time.Duration
 }
@@ -38,9 +43,11 @@ type DB struct {
 func New(databaseURL *url.URL) *DB {
 	return &DB{
 		AutoDumpSchema: true,
+		AutoDumpData:   true,
 		DatabaseURL:    databaseURL,
 		MigrationsDir:  DefaultMigrationsDir,
 		SchemaFile:     DefaultSchemaFile,
+		DataFile:       DefaultDataFile,
 		WaitInterval:   DefaultWaitInterval,
 		WaitTimeout:    DefaultWaitTimeout,
 	}
@@ -148,6 +155,31 @@ func (db *DB) DumpSchema() error {
 
 	// write schema to file
 	return ioutil.WriteFile(db.SchemaFile, schema, 0644)
+}
+
+func (db *DB) DumpData() error {
+	drv, sqlDB, err := db.openDatabaseForMigration()
+
+	if err != nil {
+		return err
+	}
+	defer mustClose(sqlDB)
+
+	data, err := drv.DumpData(db.DatabaseURL, sqlDB)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Writing: %s\n", db.DataFile)
+
+	// ensure data directory exists
+	if err = ensureDir(filepath.Dir(db.DataFile)); err != nil {
+		return err
+	}
+
+	// write data to file
+	return ioutil.WriteFile(db.DataFile, data, 0644)
+
 }
 
 const migrationTemplate = "-- migrate:up\n\n\n-- migrate:down\n\n"
@@ -277,6 +309,10 @@ func (db *DB) Migrate() error {
 	// automatically update schema file, silence errors
 	if db.AutoDumpSchema {
 		_ = db.DumpSchema()
+	}
+
+	if db.AutoDumpData {
+		_ = db.DumpData()
 	}
 
 	return nil
@@ -419,6 +455,10 @@ func (db *DB) Rollback() error {
 	// automatically update schema file, silence errors
 	if db.AutoDumpSchema {
 		_ = db.DumpSchema()
+	}
+
+	if db.AutoDumpData {
+		_ = db.DumpData()
 	}
 
 	return nil

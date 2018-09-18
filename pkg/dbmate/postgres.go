@@ -105,6 +105,18 @@ func (drv PostgresDriver) DumpSchema(u *url.URL, db *sql.DB) ([]byte, error) {
 	return trimLeadingSQLComments(schema)
 }
 
+// DumpData returns the current data
+func (drv PostgresDriver) DumpData(u *url.URL, db *sql.DB) ([]byte, error) {
+	schema, err := runCommand("pg_dump", "--format=plain", "--encoding=UTF8",
+		"--data-only", "--exclude-table=public.schema_migrations", "--no-privileges", "--no-owner", u.String())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return trimLeadingSQLComments(schema)
+}
+
 // DatabaseExists determines whether the database exists
 func (drv PostgresDriver) DatabaseExists(u *url.URL) (bool, error) {
 	name := databaseName(u)
